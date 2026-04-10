@@ -1,106 +1,65 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 
-st.set_page_config(page_title="AI Financial Agent", layout="wide")
+# Financial Dashboard App
+st.title('Comprehensive Financial Dashboard')
 
-st.title("📊 AI Financial Decision Support Agent")
+# Sidebar navigation
+st.sidebar.title('Navigation')
+option = st.sidebar.selectbox('Choose a section:', ['Budget', 'Goals', 'Analysis', 'Health', 'Projections'])
 
-st.write("Enter your financial data:")
+# Session state to hold user data
+if 'data' not in st.session_state:
+    st.session_state.data = {}
 
-col1, col2 = st.columns(2)
+# 1. Budget Categories
+if option == 'Budget':
+    st.header('Budget Categories')
+    categories = st.multiselect('Select categories', ['Rent', 'Groceries', 'Utilities', 'Transport', 'Entertainment'])
+    expenses = [1000, 300, 150, 200, 100]  # Example expenses
+    df = pd.DataFrame({'Categories': categories, 'Expenses': expenses})
+    fig = px.pie(df, values='Expenses', names='Categories', title='Expenses by Category')
+    st.plotly_chart(fig)
 
-with col1:
-    income = st.number_input("Income ($)", min_value=0, value=0)
+# 2. Time Period Toggle
+    period = st.selectbox('Select time period', ['Daily', 'Weekly', 'Monthly', 'Yearly'])
+    # Logic to handle time period can be added later.
 
-with col2:
-    expenses = st.number_input("Expenses ($)", min_value=0, value=0)
+# 3. Financial Goals
+elif option == 'Goals':
+    st.header('Set Financial Goals')
+    target = st.number_input('Savings Target', min_value=0)
+    current_savings = st.number_input('Current Savings', min_value=0)
+    progress = (current_savings / target) * 100 if target > 0 else 0
+    st.progress(progress)
 
-# Input Validation
-if income < 0 or expenses < 0:
-    st.error("❌ Please enter positive values")
-elif income == 0 and expenses > 0:
-    st.warning("⚠️ You have expenses but no income. Please enter income data.")
-elif expenses > income:
-    st.warning("⚠️ Warning: Your expenses exceed your income!")
+# 4. Historical Data
+elif option == 'Analysis':
+    st.header('Historical Data')
+    data = {'Date': ['2026-01-01', '2026-02-01'], 'Savings': [1000, 1500]}
+    df = pd.DataFrame(data)
+    st.write(df)
+    st.download_button('Download Data as CSV', df.to_csv().encode('utf-8'), 'data.csv', 'text/csv')
 
-if st.button("Analyze", type="primary"):
-    
-    if income == 0:
-        st.error("❌ Please enter income to calculate expense ratio")
-    else:
-        profit = income - expenses
-        savings = profit
-        ratio = (expenses / income * 100)
-        savings_ratio = (savings / income * 100)
+# 5. Debt Analysis
+elif option == 'Health':
+    st.header('Debt Analysis')
+    income = st.number_input('Monthly Income', min_value=0)
+    debt = st.number_input('Total Debt', min_value=0)
+    ratio = (debt / income) * 100 if income > 0 else 0
+    st.write(f'Debt-to-Income Ratio: {ratio:.2f}%')
 
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Total Income", f"${income:,.2f}")
-        with col2:
-            st.metric("Total Expenses", f"${expenses:,.2f}")
-        with col3:
-            st.metric("Profit/Savings", f"${profit:,.2f}", delta=f"{savings_ratio:.1f}% of income")
-        with col4:
-            st.metric("Expense Ratio", f"{ratio:.2f}%")
+# Additional sections: Emergency Fund Calculator, Projections, Financial Health Score, Comparison Mode...
 
-        # Data Visualization
-        st.subheader("📊 Financial Breakdown")
-        
-        fig = go.Figure(data=[
-            go.Bar(name='Income', x=['Financial Summary'], y=[income], marker_color='#00CC96'),
-            go.Bar(name='Expenses', x=['Financial Summary'], y=[expenses], marker_color='#EF553B')
-        ])
-        
-        fig.update_layout(
-            barmode='group',
-            height=400,
-            showlegend=True,
-            hovermode='x unified'
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+# 6. Emergency Fund Calculator
+elif option == 'Projections':
+    st.header('Emergency Fund Calculator')
+    months = st.selectbox('Select months', [3, 6, 12])
+    monthly_expense = st.number_input('Monthly Expense', min_value=0)
+    emergency_fund = monthly_expense * months
+    st.write(f'Emergency Fund Needed: ${emergency_fund}')
 
-        # Pie Chart for Expense Breakdown
-        fig_pie = go.Figure(data=[go.Pie(
-            labels=['Expenses', 'Savings'],
-            values=[expenses, savings],
-            marker=dict(colors=['#EF553B', '#00CC96']),
-            hole=.3
-        )])
-        
-        fig_pie.update_layout(height=400)
-        st.plotly_chart(fig_pie, use_container_width=True)
+# Placeholder for an Actionable AI Recommendations function
+st.sidebar.success('Check your financial dashboard sections!')
 
-        # AI Recommendation
-        st.subheader("💡 AI Recommendation")
-
-        if ratio > 90:
-            st.error("🚨 Critical: Expenses are 90%+ of income! You're spending almost all you earn. Take immediate action to reduce costs.")
-        elif ratio > 70:
-            st.warning("⚠️ Expenses are too high (70%+). Reduce unnecessary costs and prioritize essential spending.")
-        elif ratio > 50:
-            st.info("⚠️ Try to control your spending. Aim for expenses below 50% to build wealth.")
-        else:
-            st.success("✅ Excellent financial management! You're saving more than half your income. Keep it up!")
-
-        # Additional Financial Metrics
-        st.subheader("📈 Financial Insights")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.write(f"**Savings Rate:** {savings_ratio:.2f}%")
-            st.write(f"**Monthly Savings:** ${savings:,.2f}")
-        
-        with col2:
-            if income > 0:
-                months_to_save_1k = 1000 / savings if savings > 0 else float('inf')
-                if months_to_save_1k != float('inf'):
-                    st.write(f"**Months to save $1,000:** {months_to_save_1k:.1f}")
-                else:
-                    st.write("**Months to save $1,000:** N/A (No savings)")
-        
-        with col3:
-            st.write(f"**Expense per $1 earned:** ${(expenses/income):.2f}")
