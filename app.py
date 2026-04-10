@@ -1,65 +1,30 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
-# Financial Dashboard App
-st.title('Comprehensive Financial Dashboard')
+st.title("📊 AI Financial Decision Support Agent")
 
-# Sidebar navigation
-st.sidebar.title('Navigation')
-option = st.sidebar.selectbox('Choose a section:', ['Budget', 'Goals', 'Analysis', 'Health', 'Projections'])
+st.write("Enter your financial data:")
 
-# Session state to hold user data
-if 'data' not in st.session_state:
-    st.session_state.data = {}
+income = st.number_input("Income ($)", min_value=0)
+expenses = st.number_input("Expenses ($)", min_value=0)
 
-# 1. Budget Categories
-if option == 'Budget':
-    st.header('Budget Categories')
-    categories = st.multiselect('Select categories', ['Rent', 'Groceries', 'Utilities', 'Transport', 'Entertainment'])
-    expenses = [1000, 300, 150, 200, 100]  # Example expenses
-    df = pd.DataFrame({'Categories': categories, 'Expenses': expenses})
-    fig = px.pie(df, values='Expenses', names='Categories', title='Expenses by Category')
-    st.plotly_chart(fig)
+if st.button("Analyze"):
 
-# 2. Time Period Toggle
-    period = st.selectbox('Select time period', ['Daily', 'Weekly', 'Monthly', 'Yearly'])
-    # Logic to handle time period can be added later.
+    profit = income - expenses
+    ratio = (expenses / income * 100) if income > 0 else 0
 
-# 3. Financial Goals
-elif option == 'Goals':
-    st.header('Set Financial Goals')
-    target = st.number_input('Savings Target', min_value=0)
-    current_savings = st.number_input('Current Savings', min_value=0)
-    progress = (current_savings / target) * 100 if target > 0 else 0
-    st.progress(progress)
+    st.subheader("📊 Financial Report")
 
-# 4. Historical Data
-elif option == 'Analysis':
-    st.header('Historical Data')
-    data = {'Date': ['2026-01-01', '2026-02-01'], 'Savings': [1000, 1500]}
-    df = pd.DataFrame(data)
-    st.write(df)
-    st.download_button('Download Data as CSV', df.to_csv().encode('utf-8'), 'data.csv', 'text/csv')
+    st.write(f"Total Income: ${income}")
+    st.write(f"Total Expenses: ${expenses}")
+    st.write(f"Profit: ${profit}")
+    st.write(f"Expense Ratio: {ratio:.2f}%")
 
-# 5. Debt Analysis
-elif option == 'Health':
-    st.header('Debt Analysis')
-    income = st.number_input('Monthly Income', min_value=0)
-    debt = st.number_input('Total Debt', min_value=0)
-    ratio = (debt / income) * 100 if income > 0 else 0
-    st.write(f'Debt-to-Income Ratio: {ratio:.2f}%')
+    st.subheader("💡 AI Recommendation")
 
-# Additional sections: Emergency Fund Calculator, Projections, Financial Health Score, Comparison Mode...
-
-# 6. Emergency Fund Calculator
-elif option == 'Projections':
-    st.header('Emergency Fund Calculator')
-    months = st.selectbox('Select months', [3, 6, 12])
-    monthly_expense = st.number_input('Monthly Expense', min_value=0)
-    emergency_fund = monthly_expense * months
-    st.write(f'Emergency Fund Needed: ${emergency_fund}')
-
-# Placeholder for an Actionable AI Recommendations function
-st.sidebar.success('Check your financial dashboard sections!')
-
+    if ratio > 70:
+        st.write("⚠️ Expenses are too high. Reduce unnecessary costs.")
+    elif ratio > 50:
+        st.write("⚠️ Try to control your spending.")
+    else:
+        st.write("✅ Good financial management. Keep it up!")
