@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fintech Expense & Advice Agent</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="container">
+    <h1>💸 Fintech Expense & AI Advice Agent</h1>
+
+    <section class="card">
+      <h2>Add Expense</h2>
+      <form id="expense-form">
+        <input id="name" placeholder="Expense name" required />
+        <input id="amount" type="number" step="0.01" min="0" placeholder="Amount" required />
+        <input id="category" placeholder="Category (e.g. Food)" required />
+        <button type="submit">Add Expense</button>
+      </form>
+      <p id="form-message"></p>
+    </section>
+
+    <section class="card summary-grid">
+      <div>
+        <h2>Total Spending</h2>
+        <p id="total-spending">$0.00</p>
+      </div>
+      <div>
+        <h2>Expenses Logged</h2>
+        <p id="expense-count">0</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Expense Breakdown</h2>
+      <canvas id="expense-chart" height="130"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Recent Expenses</h2>
+      <ul id="expense-list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>AI Chat</h2>
+      <div id="chat-box"></div>
+      <form id="chat-form">
+        <input id="chat-message" placeholder="Ask for budgeting, saving, or debt advice..." required />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const expenseForm = document.getElementById('expense-form');
+    const formMessage = document.getElementById('form-message');
+    const expenseList = document.getElementById('expense-list');
+    const totalSpendingEl = document.getElementById('total-spending');
+    const expenseCountEl = document.getElementById('expense-count');
+    const chatForm = document.getElementById('chat-form');
+    const chatBox = document.getElementById('chat-box');
+    let chart;
+
+    async function loadExpensesAndSummary() {
+      const [expensesRes, summaryRes] = await Promise.all([
+        fetch('/get-expenses'),
+        fetch('/summary')
+      ]);
+
+      const expensesData = await expensesRes.json();
+      const summaryData = await summaryRes.json();
+
+      renderExpenses(expensesData.expenses || []);
+      renderSummary(summaryData);
+    }
+
+    function renderExpenses(expenses) {
+      expenseList.innerHTML = '';
+      if (!expenses.length) {
+        expenseList.innerHTML = '<li>No expenses yet.</li>';
+        return;
+      }
+
+      expenses.forEach((expense) => {
+        const li = document.createElement('li');
+        li.textContent = `${expense.name} — $${Number(expense.amount).toFixed(2)} (${expense.category})`;
+        expenseList.appendChild(li);
+      });
+    }
+
+    function renderSummary(summary) {
+      totalSpendingEl.textContent = `$${Number(summary.total_spending || 0).toFixed(2)}`;
+      expenseCountEl.textContent = summary.count || 0;
+
+      const labels = Object.keys(summary.category_totals || {});
+      const values = Object.values(summary.category_totals || {});
+
+      if (chart) chart.destroy();
+      chart = new Chart(document.getElementById('expense-chart'), {
+        type: 'pie',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ['#22d3ee', '#818cf8', '#f472b6', '#34d399', '#fbbf24', '#fb7185']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { labels: { color: '#e2e8f0' } }
+          }
+        }
+      });
+    }
+
+    expenseForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const payload = {
+        name: document.getElementById('name').value,
+        amount: document.getElementById('amount').value,
+        category: document.getElementById('category').value,
+        timestamp: new Date().toISOString()
+      };
+
+      const response = await fetch('/add-expense', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        formMessage.textContent = data.error || 'Unable to add expense.';
+        return;
+      }
+
+      formMessage.textContent = 'Expense added successfully.';
+      expenseForm.reset();
+      await loadExpensesAndSummary();
+    });
+
+    chatForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const messageInput = document.getElementById('chat-message');
+      const message = messageInput.value;
+
+      chatBox.innerHTML += `<p class="user"><strong>You:</strong> ${message}</p>`;
+
+      const response = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await response.json();
+
+      chatBox.innerHTML += `<p class="bot"><strong>Agent:</strong> ${data.response || data.error}</p>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+      messageInput.value = '';
+    });
+
+    loadExpensesAndSummary();
+  </script>
+</body>
+</html>
