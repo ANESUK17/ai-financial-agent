@@ -3,6 +3,12 @@ body {
   max-width: 760px;
   margin: 24px auto;
   padding: 0 12px;
+  background: #f8fafc;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 12px;
 }
 
 .card {
@@ -10,6 +16,16 @@ body {
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 12px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+}
+
+.chart-card {
+  min-height: 320px;
+}
+
+#category-chart {
+  max-height: 260px;
 }
 
 form {
@@ -37,3 +53,18 @@ input, select, button {
 
 .user { color: #0b57d0; }
 .bot { color: #1b5e20; }
+
+@media (min-width: 900px) {
+  body {
+    max-width: 980px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .dashboard-grid .card:last-child {
+    grid-column: span 2;
+  }
+}
