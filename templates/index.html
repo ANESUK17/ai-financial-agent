@@ -5,47 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Expense Tracker + Chat</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <main class="container">
     <h1>Expense Tracker + AI Chat</h1>
 
-    <section class="card">
-      <h2>Add Expense</h2>
-      <form id="expense-form">
-        <input id="name" placeholder="Expense name" required />
-        <input id="amount" type="number" step="0.01" min="0" placeholder="Amount" required />
-        <select id="category" required>
-          <option value="" disabled selected>Select category</option>
-          <option>Food</option>
-          <option>Transport</option>
-          <option>Shopping</option>
-          <option>Bills</option>
-          <option>Other</option>
-        </select>
-        <button type="submit">Save Expense</button>
-      </form>
-      <p id="form-message"></p>
-    </section>
+    <div class="dashboard-grid">
+      <section class="card">
+        <h2>Add Expense</h2>
+        <form id="expense-form">
+          <input id="name" placeholder="Expense name" required />
+          <input id="amount" type="number" step="0.01" min="0" placeholder="Amount" required />
+          <select id="category" required>
+            <option value="" disabled selected>Select category</option>
+            <option>Food</option>
+            <option>Transport</option>
+            <option>Shopping</option>
+            <option>Bills</option>
+            <option>Other</option>
+          </select>
+          <button type="submit">Save Expense</button>
+        </form>
+        <p id="form-message"></p>
+      </section>
 
-    <section class="card">
-      <h2>Total Spending</h2>
-      <p id="total-spending">$0.00</p>
-    </section>
+      <section class="card">
+        <h2>Total Spending</h2>
+        <p id="total-spending">$0.00</p>
+      </section>
 
-    <section class="card">
-      <h2>Expenses</h2>
-      <ul id="expense-list"></ul>
-    </section>
+      <section class="card chart-card">
+        <h2>Spending by Category</h2>
+        <canvas id="category-chart" aria-label="Pie chart showing spending by category"></canvas>
+      </section>
 
-    <section class="card">
-      <h2>AI Chat</h2>
-      <div id="chat-box"></div>
-      <form id="chat-form">
-        <input id="chat-message" placeholder="Type a message..." required />
-        <button type="submit">Send</button>
-      </form>
-    </section>
+      <section class="card">
+        <h2>Expenses</h2>
+        <ul id="expense-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>AI Chat</h2>
+        <div id="chat-box"></div>
+        <form id="chat-form">
+          <input id="chat-message" placeholder="Type a message..." required />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </div>
   </main>
 
   <script>
@@ -55,6 +63,8 @@
     const totalSpendingEl = document.getElementById('total-spending');
     const chatForm = document.getElementById('chat-form');
     const chatBox = document.getElementById('chat-box');
+    const categoryChartCanvas = document.getElementById('category-chart');
+    let categoryChart;
 
     async function loadExpensesAndSummary() {
       const [expensesRes, summaryRes] = await Promise.all([
@@ -66,7 +76,65 @@
       const summaryData = await summaryRes.json();
 
       renderExpenses(expensesData.expenses || []);
+      renderCategoryChart(expensesData.expenses || []);
       totalSpendingEl.textContent = `$${Number(summaryData.total_spending || 0).toFixed(2)}`;
+    }
+
+    function renderCategoryChart(expenses) {
+      const totalsByCategory = expenses.reduce((totals, expense) => {
+        const category = expense.category || 'Uncategorized';
+        totals[category] = (totals[category] || 0) + Number(expense.amount || 0);
+        return totals;
+      }, {});
+
+      const labels = Object.keys(totalsByCategory);
+      const values = Object.values(totalsByCategory);
+
+      if (categoryChart) {
+        categoryChart.destroy();
+      }
+
+      if (!labels.length) {
+        categoryChart = new Chart(categoryChartCanvas, {
+          type: 'pie',
+          data: {
+            labels: ['No expenses yet'],
+            datasets: [{
+              data: [1],
+              backgroundColor: ['#e0e0e0']
+            }]
+          },
+          options: {
+            plugins: {
+              legend: { position: 'bottom' }
+            }
+          }
+        });
+        return;
+      }
+
+      categoryChart = new Chart(categoryChartCanvas, {
+        type: 'pie',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: [
+              '#4F46E5', '#0891B2', '#16A34A', '#D97706', '#DC2626', '#9333EA', '#0EA5E9'
+            ]
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (context) => `${context.label}: $${Number(context.raw).toFixed(2)}`
+              }
+            }
+          }
+        }
+      });
     }
 
     function renderExpenses(expenses) {
