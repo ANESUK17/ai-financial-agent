@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 from openai import OpenAI
 
 app = Flask(__name__)
@@ -8,78 +8,49 @@ app = Flask(__name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
+# In-memory expense storage
+expenses = []
+
 
 @app.route("/", methods=["GET"])
 def index():
-    return """
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flask AI Chatbot</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 720px; margin: 30px auto; padding: 0 12px; }
-    #chat { border: 1px solid #ddd; border-radius: 8px; padding: 12px; height: 360px; overflow-y: auto; background: #fafafa; }
-    .msg { margin: 8px 0; }
-    .user { color: #0b57d0; }
-    .bot { color: #1b5e20; }
-    form { display: flex; gap: 8px; margin-top: 10px; }
-    input { flex: 1; padding: 10px; }
-    button { padding: 10px 14px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <h2>Flask AI Chatbot</h2>
-  <div id="chat"></div>
-  <form id="chatForm">
-    <input id="message" type="text" placeholder="Type a message..." required />
-    <button type="submit">Send</button>
-  </form>
+    return render_template("index.html")
 
-  <script>
-    const chat = document.getElementById('chat');
-    const form = document.getElementById('chatForm');
-    const input = document.getElementById('message');
 
-    function addMessage(role, text) {
-      const div = document.createElement('div');
-      div.className = `msg ${role}`;
-      div.textContent = `${role === 'user' ? 'You' : 'Bot'}: ${text}`;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
+@app.route("/add-expense", methods=["POST"])
+def add_expense():
+    payload = request.get_json(silent=True) or {}
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const message = input.value.trim();
-      if (!message) return;
+    name = str(payload.get("name", "")).strip()
+    category = str(payload.get("category", "")).strip()
 
-      addMessage('user', message);
-      input.value = '';
+    try:
+        amount = float(payload.get("amount", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Amount must be a valid number."}), 400
 
-      try {
-        const res = await fetch('/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
+    if not name:
+        return jsonify({"error": "Name is required."}), 400
+    if not category:
+        return jsonify({"error": "Category is required."}), 400
+    if amount < 0:
+        return jsonify({"error": "Amount must be non-negative."}), 400
 
-        const data = await res.json();
-        if (!res.ok) {
-          addMessage('bot', data.error || 'Request failed.');
-          return;
-        }
+    expense = {"name": name, "amount": amount, "category": category}
+    expenses.append(expense)
 
-        addMessage('bot', data.response || 'No response.');
-      } catch (err) {
-        addMessage('bot', 'Network error.');
-      }
-    });
-  </script>
-</body>
-</html>
-"""
+    return jsonify({"message": "Expense added.", "expense": expense}), 201
+
+
+@app.route("/get-expenses", methods=["GET"])
+def get_expenses():
+    return jsonify({"expenses": expenses})
+
+
+@app.route("/summary", methods=["GET"])
+def summary():
+    total_spending = sum(expense["amount"] for expense in expenses)
+    return jsonify({"total_spending": total_spending, "count": len(expenses)})
 
 
 @app.route("/chat", methods=["POST"])

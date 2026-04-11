@@ -1,80 +1,39 @@
-:root {
-  color-scheme: dark;
-  --bg: #0b1120;
-  --card: #111827;
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --accent: #22d3ee;
-}
-
 body {
-  margin: 0;
-  font-family: Inter, system-ui, sans-serif;
-  background: linear-gradient(160deg, #020617, #0f172a);
-  color: var(--text);
-}
-
-.container {
-  max-width: 900px;
-  margin: 30px auto;
-  padding: 0 16px 28px;
+  font-family: Arial, sans-serif;
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 0 12px;
 }
 
 .card {
-  background: rgba(17, 24, 39, 0.9);
-  border: 1px solid #1f2937;
-  border-radius: 14px;
-  padding: 18px;
-  margin: 16px 0;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-input, button {
-  border-radius: 10px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: var(--text);
-  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
 }
 
 form {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-  gap: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-#chat-form {
-  grid-template-columns: 1fr auto;
-}
-
-button {
-  background: var(--accent);
-  color: #00131b;
-  font-weight: 700;
-  cursor: pointer;
+input, select, button {
+  padding: 8px;
 }
 
 #expense-list {
-  margin: 0;
   padding-left: 18px;
-  color: var(--muted);
 }
 
 #chat-box {
-  max-height: 220px;
+  height: 180px;
   overflow-y: auto;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-  background: #020617;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
 }
 
-.user { color: #7dd3fc; }
-.bot { color: #a7f3d0; }
+.user { color: #0b57d0; }
+.bot { color: #1b5e20; }
