@@ -53,6 +53,12 @@
           <button type="submit">Send</button>
         </form>
       </section>
+
+      <section class="card">
+        <h2>AI Financial Advice</h2>
+        <button id="advice-button" type="button">Get AI Advice</button>
+        <p id="advice-output"></p>
+      </section>
     </div>
   </main>
 
@@ -64,6 +70,8 @@
     const chatForm = document.getElementById('chat-form');
     const chatBox = document.getElementById('chat-box');
     const categoryChartCanvas = document.getElementById('category-chart');
+    const adviceButton = document.getElementById('advice-button');
+    const adviceOutput = document.getElementById('advice-output');
     let categoryChart;
 
     async function loadExpensesAndSummary() {
@@ -195,6 +203,13 @@
       chatBox.innerHTML += `<p class="bot"><strong>Agent:</strong> ${data.response || data.error}</p>`;
       chatBox.scrollTop = chatBox.scrollHeight;
       messageInput.value = '';
+    });
+
+    adviceButton.addEventListener('click', async () => {
+      adviceOutput.textContent = 'Generating advice...';
+      const response = await fetch('/advice');
+      const data = await response.json();
+      adviceOutput.textContent = data.advice || data.error || 'Unable to generate advice.';
     });
 
     loadExpensesAndSummary();

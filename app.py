@@ -81,5 +81,49 @@ def chat():
         return jsonify({"error": f"OpenAI API error: {str(exc)}"}), 500
 
 
+@app.route("/advice", methods=["GET"])
+def advice():
+    if not expenses:
+        return jsonify({"advice": "Add a few expenses first to get personalized AI advice."})
+
+    if not os.getenv("OPENAI_API_KEY"):
+        return jsonify({"error": "OPENAI_API_KEY is not set."}), 500
+
+    total_spending = sum(expense["amount"] for expense in expenses)
+    by_category = {}
+    for expense in expenses:
+        category = expense.get("category", "Other")
+        by_category[category] = by_category.get(category, 0) + float(expense.get("amount", 0))
+
+    top_categories = sorted(by_category.items(), key=lambda item: item[1], reverse=True)[:3]
+    category_summary = ", ".join(
+        [f"{name}: ${amount:.2f}" for name, amount in top_categories]
+    )
+
+    prompt = (
+        "You are a practical financial coach. Based on the expense data, "
+        "give 3 short, actionable tips to reduce spending and improve savings.\n"
+        f"Total spending: ${total_spending:.2f}\n"
+        f"Top categories: {category_summary}\n"
+        f"Expense count: {len(expenses)}"
+    )
+
+    try:
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You provide concise, friendly financial advice.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+        )
+        advice_text = completion.choices[0].message.content or "No advice generated."
+        return jsonify({"advice": advice_text})
+    except Exception as exc:
+        return jsonify({"error": f"OpenAI API error: {str(exc)}"}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=False)
